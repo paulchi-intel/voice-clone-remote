@@ -77,6 +77,7 @@ const TRANSLATIONS = {
     'err-backend-offline':   'Cannot reach the B70 TTS server. Check the Server address and that the voice-clone-tts container is running.',
     'err-generate-failed':   'Generation failed: ',
     'queue-empty':           'No tasks yet. Go to "Setup" and click "Generate Speech" to add tasks.',
+    'queue-go-setup':        'Go to Setup',
     'task-waiting':          'Waiting',
     'task-generating':       'Generating',
     'task-done':             'Done',
@@ -135,6 +136,7 @@ const TRANSLATIONS = {
     'err-backend-offline':   '無法連線到 B70 TTS 伺服器，請確認伺服器位址，以及 voice-clone-tts container 是否在執行。',
     'err-generate-failed':   '合成失敗：',
     'queue-empty':           '尚無任務。在「設定」頁按下「合成語音」即可加入佇列。',
+    'queue-go-setup':        '前往設定',
     'task-waiting':          '等待中',
     'task-generating':       '合成中',
     'task-done':             '完成',
@@ -193,6 +195,7 @@ const TRANSLATIONS = {
     'err-backend-offline':   '无法连接到 B70 TTS 服务器，请确认服务器地址，以及 voice-clone-tts container 是否在运行。',
     'err-generate-failed':   '合成失败：',
     'queue-empty':           '尚无任务。在「设置」页按下「合成语音」即可加入队列。',
+    'queue-go-setup':        '前往设置',
     'task-waiting':          '等待中',
     'task-generating':       '合成中',
     'task-done':             '完成',
@@ -300,6 +303,7 @@ function switchTab(name) {
 }
 tabSetup.addEventListener('click', () => switchTab('setup'));
 tabQueue.addEventListener('click', () => switchTab('queue'));
+document.getElementById('queueEmptyCta').addEventListener('click', () => switchTab('setup'));
 
 // ── Badge ──────────────────────────────────────────────────────────────────────
 function updateBadge() {
@@ -880,7 +884,7 @@ function renderTaskCard(task) {
   queueEmpty.style.display = 'none';
 
   const card = document.createElement('div');
-  card.className = 'task-card';
+  card.className = `task-card ${task.status}`;
   card.id = `task-${task.id}`;
   card.classList.toggle('sortable', task.status !== 'generating');
   card.innerHTML = buildCardHTML(task);
@@ -974,8 +978,10 @@ function buildCardHTML(task) {
   return `
     <div class="task-header">
       ${task.status !== 'generating' ? `<span class="task-drag-handle" title="Drag to reorder">${ICONS.grip}</span>` : '<span style="width:19px;flex-shrink:0"></span>'}
-      <span class="task-seq">#${task.seq}</span>
-      <span class="task-badge ${task.status}">${badgeLabel}</span>
+      <span class="task-state" title="${badgeLabel}">
+        <span class="ts-n"${task.seq >= 100 ? ' style="font-size:8px"' : task.seq >= 10 ? ' style="font-size:10px"' : ''}>${task.seq}</span>
+        <svg class="ts-ring" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14"/></svg>
+      </span>
       <span class="task-filename">${escapeHtml(task.audioFileData.name)}</span>
       <span class="task-lang-tag">${escapeHtml(task.language)}</span>
       ${task.status === 'generating'
@@ -986,6 +992,7 @@ function buildCardHTML(task) {
       ${stopReloadBtn}
       <button class="task-remove-btn" title="Remove">${ICONS.remove}</button>
     </div>
+    ${task.status === 'generating' ? '<div class="task-progress"><span></span></div>' : ''}
     <div class="task-text-box">
       <div class="task-text-clip${expanded ? ' expanded' : ''}"${expanded ? ' style="max-height:none"' : ''}>
         <div class="task-text">${escapeHtml(task.text)}</div>
@@ -1099,8 +1106,11 @@ function initDragAndDrop() {
     // Update seq numbers
     taskQueue.forEach((t, i) => {
       t.seq = i + 1;
-      const seqEl = document.querySelector(`#task-${t.id} .task-seq`);
-      if (seqEl) seqEl.textContent = `#${t.seq}`;
+      const seqEl = document.querySelector(`#task-${t.id} .ts-n`);
+      if (seqEl) {
+        seqEl.textContent = `${t.seq}`;
+        seqEl.style.fontSize = t.seq >= 100 ? '8px' : t.seq >= 10 ? '10px' : '';
+      }
     });
     nextSeq = taskQueue.length + 1;
 

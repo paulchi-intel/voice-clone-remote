@@ -519,7 +519,7 @@
     /* Queue panel */
     .queue-content {
       flex: 1; overflow-y: auto; padding: 12px;
-      display: flex; flex-direction: column; gap: 10px;
+      display: flex; flex-direction: column; gap: 16px;
     }
     .queue-content::-webkit-scrollbar { width: 5px; }
     .queue-content::-webkit-scrollbar-track { background: #f1f5f9; }
@@ -558,19 +558,46 @@
     }
     @keyframes twinkle { 0%, 100% { opacity: 0.25; transform: scale(0.7); } 50% { opacity: 1; transform: scale(1.3); } }
     .queue-empty-text { font-size: 13px; line-height: 1.6; }
+    .queue-empty-cta {
+      margin-top: 6px; padding: 9px 18px; border: none; border-radius: 9px; cursor: pointer;
+      background: linear-gradient(135deg, #6d28d9, #8b5cf6); color: #fff;
+      font-size: 12px; font-weight: 700; font-family: inherit;
+      transition: transform var(--d-quick) var(--e-standard), box-shadow var(--d-std) var(--e-standard);
+    }
+    .queue-empty-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(109, 40, 217, 0.34); }
+    .queue-empty-cta:active { transform: translateY(0) scale(0.97); }
 
     /* Task card */
     .task-card {
-      background: white; border: 1px solid #e5e7eb;
+      position: relative; background: white; border: 1.5px solid #e5e7eb;
       border-radius: 12px; padding: 10px 12px;
       display: flex; flex-direction: column; gap: 6px;
-      transition: box-shadow 0.2s;
+      transition: border-color var(--d-std) var(--e-standard), box-shadow var(--d-std) var(--e-standard);
     }
     .task-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.07); }
-    .task-card.generating { border-color: #a5b4fc; }
-    .task-card.done       { border-color: #6ee7b7; }
+    /* The running task is the "current" card: same violet glow as the current step */
+    .task-card.generating { border-color: #c4b5fd; box-shadow: 0 2px 10px rgba(109, 40, 217, 0.10); }
+    .task-card.done       { border-color: #a7f3d0; }
     .task-card.error      { border-color: #fca5a5; }
     .task-card.stopped    { border-color: #fde68a; }
+    /* Connector down to the next task; fills green once this one is done */
+    .task-card:not(:last-child)::after {
+      content: ""; position: absolute; left: 47px; top: calc(100% + 1.5px);
+      width: 2px; height: 16px; background: #e5e7eb; border-radius: 1px;
+    }
+    .task-card.done:not(:last-child)::after {
+      background: #10b981; transform-origin: top; animation: link-grow 0.4s var(--e-emphasized);
+    }
+    /* Indeterminate progress while generating (the backend reports no percentage) */
+    .task-progress {
+      position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+      overflow: hidden; border-radius: 0 0 11px 11px; background: #f5f3ff;
+    }
+    .task-progress > span {
+      display: block; height: 100%; width: 35%; border-radius: 2px;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      animation: status-slide 1.4s ease-in-out infinite;
+    }
     .task-card.dragging   { opacity: 0.4; }
     .task-card.drag-over-top    { border-top: 2px solid #6d28d9 !important; }
     .task-card.drag-over-bottom { border-bottom: 2px solid #6d28d9 !important; }
@@ -583,19 +610,31 @@
     .task-drag-handle .hb-icon { width: 15px; height: 15px; display: block; }
     .task-drag-handle:active { cursor: grabbing; }
     .task-card.sortable:hover .task-drag-handle { color: #9ca3af; }
-    .task-badge {
-      font-size: 10px; font-weight: 700;
-      padding: 2px 7px; border-radius: 10px; white-space: nowrap; flex-shrink: 0;
+    /* Status circle: the task number, colored by state (gray waiting, violet running,
+       green done, red failed, amber stopped) like the step numbers in Setup */
+    .task-state {
+      position: relative; width: 22px; height: 22px; flex-shrink: 0; border-radius: 50%;
+      border: 2px solid #d1d5db; color: #9ca3af; background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; line-height: 1;
+      transition: background var(--d-std) var(--e-standard), border-color var(--d-std) var(--e-standard),
+                  color var(--d-std) var(--e-standard), transform var(--d-std) var(--e-spring);
     }
-    .task-badge.waiting    { background: #f3f4f6; color: #6b7280; }
-    .task-badge.generating { background: #ede9fe; color: #6d28d9; animation: pulse 1.5s ease-in-out infinite; }
-    .task-badge.done       { background: #d1fae5; color: #065f46; }
-    .task-badge.error      { background: #fee2e2; color: #b91c1c; }
-    .task-badge.stopped    { background: #fef3c7; color: #92400e; }
-    .task-seq { font-size: 10px; color: #9ca3af; font-weight: 600; flex-shrink: 0; }
+    .ts-n { font-variant-numeric: tabular-nums; }
+    .ts-ring {
+      position: absolute; inset: -5px; width: calc(100% + 10px); height: calc(100% + 10px);
+      opacity: 0; pointer-events: none;
+    }
+    .ts-ring circle { stroke: #a78bfa; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 22 62; fill: none; }
+    @keyframes ts-spin { to { transform: rotate(360deg); } }
+    .task-card.generating .task-state { background: #6d28d9; border-color: #6d28d9; color: #fff; }
+    .task-card.generating .ts-ring { opacity: 1; animation: ts-spin 0.9s linear infinite; }
+    .task-card.done .task-state { background: #10b981; border-color: #10b981; color: #fff; transform: scale(1.06); }
+    .task-card.error .task-state { background: #ef4444; border-color: #ef4444; color: #fff; }
+    .task-card.stopped .task-state { background: #f59e0b; border-color: #f59e0b; color: #fff; }
     .task-filename {
-      font-size: 11px; color: #374151; font-weight: 600;
-      flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      font-size: 12px; color: #1f2937; font-weight: 700;
+      flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .task-lang-tag {
       font-size: 10px; background: #ede9fe; color: #6d28d9;
@@ -605,26 +644,26 @@
       font-size: 10px; color: #a78bfa; font-family: monospace;
       flex-shrink: 0; letter-spacing: 0.03em;
     }
-    .task-remove-btn {
-      background: none; border: none; color: #9ca3af;
-      cursor: pointer; padding: 3px;
-      border-radius: 4px; line-height: 1; flex-shrink: 0; display: inline-flex;
+    /* Icon buttons: same shape and hover lift as the profile buttons in Setup */
+    .task-remove-btn, .task-stop-btn {
+      width: 26px; height: 24px; padding: 0; flex-shrink: 0; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: #fff; border: 1.5px solid #e2e8f0; border-radius: 7px; color: #64748b;
+      transition: background var(--d-quick) var(--e-standard), border-color var(--d-quick) var(--e-standard),
+                  color var(--d-quick) var(--e-standard), transform var(--d-quick) var(--e-standard);
     }
-    .task-remove-btn .hb-icon { width: 12px; height: 12px; display: block; transition: transform var(--d-std) var(--e-spring); }
+    .task-remove-btn { background: none; border-color: transparent; color: #9ca3af; }
+    .task-remove-btn:hover, .task-stop-btn:hover { transform: translateY(-1px); }
+    .task-remove-btn:active, .task-stop-btn:active { transform: translateY(0) scale(0.96); }
+    .task-remove-btn .hb-icon, .task-stop-btn .hb-icon { width: 12px; height: 12px; display: block; transition: transform var(--d-std) var(--e-spring); }
+    .task-remove-btn:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
     .task-remove-btn:hover .hb-icon { transform: rotate(90deg); }
-    .task-remove-btn:hover { background: #fee2e2; color: #dc2626; }
-    .task-stop-btn {
-      background: none; border: 1px solid #a5b4fc; color: #6d28d9;
-      cursor: pointer; padding: 3px 7px; display: inline-flex; align-items: center;
-      border-radius: 4px; line-height: 1; flex-shrink: 0; font-family: inherit;
-      transition: all 0.15s;
-    }
-    .task-stop-btn .hb-icon { width: 12px; height: 12px; display: block; transition: transform var(--d-std) var(--e-spring); }
+    .task-stop-btn { border-color: #c4b5fd; color: #6d28d9; }
+    .task-stop-btn:hover { background: #ede9fe; border-color: #a5b4fc; }
     .task-stop-btn:not(.reload):hover .hb-icon { transform: scale(0.82); }
+    .task-stop-btn.reload { border-color: #a7f3d0; color: #065f46; }
+    .task-stop-btn.reload:hover { background: #d1fae5; border-color: #6ee7b7; }
     .task-stop-btn.reload:hover .hb-icon { transform: rotate(-90deg); }
-    .task-stop-btn:hover { background: #ede9fe; }
-    .task-stop-btn.reload { border-color: #6ee7b7; color: #065f46; }
-    .task-stop-btn.reload:hover { background: #d1fae5; }
     /* Task text: 3 lines when collapsed (12px x 1.5 line-height), full text when expanded */
     .task-text-clip {
       position: relative; max-height: 54px; overflow: hidden;
@@ -882,6 +921,7 @@
         <path class="empty-spark s2" d="M14 20l1.2 2.4 2.4 1.2-2.4 1.2L14 27.2l-1.2-2.4-2.4-1.2 2.4-1.2Z" fill="#c4b5fd"/>
       </svg>
       <div class="queue-empty-text" data-i18n="queue-empty">尚無任務。在「設定」頁按下「合成語音」即可加入佇列。</div>
+      <button class="queue-empty-cta" id="queueEmptyCta" type="button" data-i18n="queue-go-setup">前往設定</button>
     </div>
   </div>
 </div>
