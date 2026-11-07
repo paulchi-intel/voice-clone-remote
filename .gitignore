@@ -1,0 +1,40 @@
+# ── Model weights (the server downloads them into a Docker volume) ───────────
+*.safetensors
+*.bin
+*.gguf
+Qwen3-TTS/
+models/
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# ── Local env / secrets ───────────────────────────────────────────────────────
+.env
+.env.*
+
+# ── Audio / temp files (reference voices, test output) ────────────────────────
+*.wav
+*.mp3
+*.flac
+*.ogg
+tmp_*/
+temp_*/
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+
+# ── OS / editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*~

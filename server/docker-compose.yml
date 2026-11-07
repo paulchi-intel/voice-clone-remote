@@ -1,0 +1,27 @@
+services:
+  voice-clone-tts:
+    build:
+      context: .
+      args:
+        http_proxy: ${http_proxy:-}
+        https_proxy: ${https_proxy:-}
+        no_proxy: ${no_proxy:-}
+    image: voice-clone-tts:latest
+    container_name: voice-clone-tts
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:17494:17494"
+    devices:
+      # Card 1 (PCI 54:00.0) only — card 0 stays with b70-benchmark-a
+      - /dev/dri/renderD129:/dev/dri/renderD129
+    group_add:
+      - "992"   # host render group
+    environment:
+      http_proxy: ${http_proxy:-}
+      https_proxy: ${https_proxy:-}
+      no_proxy: ${no_proxy:-}
+    volumes:
+      - voice-clone-models:/models
+
+volumes:
+  voice-clone-models:

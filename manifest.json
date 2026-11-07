@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Voice Clone Remote",
+  "version": "2.1.0",
+  "description": "Remote TTS voice cloning powered by Qwen3-TTS 1.7B running on a B70 server. Upload a reference .wav, type your text, and hear it in that voice.",
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "sidePanel",
+    "clipboardWrite",
+    "downloads",
+    "windows"
+  ],
+  "host_permissions": [
+    "https://api.github.com/*",
+    "http://localhost/*"
+  ],
+  "optional_host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "action": {
+    "default_title": "Voice Clone Remote - Qwen3-TTS"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  }
+}
