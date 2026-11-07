@@ -6,6 +6,9 @@
 export const GITHUB_REPO = "paulchi-intel/voice-clone-remote";
 export const UPDATE_CHECK_CACHE_KEY = "voiceCloneUpdateCheck";
 export const UPDATE_CHECK_CACHE_MS = 6 * 60 * 60 * 1000;
+// "No release found" is cached only briefly, so a repo that was private or had no
+// release yet is noticed soon after it becomes public or publishes one.
+export const UPDATE_CHECK_NEGATIVE_CACHE_MS = 10 * 60 * 1000;
 
 export function normalizeReleaseVersion(value) {
   const version = String(value || "").trim().replace(/^v/i, "");
@@ -47,7 +50,8 @@ export async function checkExtensionUpdate({
 } = {}) {
   const stored = await storage.get(UPDATE_CHECK_CACHE_KEY);
   const cached = stored[UPDATE_CHECK_CACHE_KEY];
-  if (!force && cached && cached.repo === repo && now - Number(cached.checkedAt || 0) < UPDATE_CHECK_CACHE_MS) {
+  const cacheMs = cached?.latestVersion ? UPDATE_CHECK_CACHE_MS : UPDATE_CHECK_NEGATIVE_CACHE_MS;
+  if (!force && cached && cached.repo === repo && now - Number(cached.checkedAt || 0) < cacheMs) {
     return formatResult(cached, repo, currentVersion);
   }
 
