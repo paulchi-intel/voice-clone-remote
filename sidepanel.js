@@ -800,6 +800,7 @@ async function processQueue() {
   if (task.status === 'cancelled') {
     // Card was already removed from DOM by the remove handler
     taskQueue = taskQueue.filter((t) => t.id !== task.id);
+    renumberTasks();
     if (taskQueue.length === 0) { queueEmpty.style.display = ''; nextSeq = 1; nextTaskId = 1; }
     updateBadge();
     saveState();
@@ -879,6 +880,22 @@ function flashCopied(btn) {
   }, 1500);
 }
 
+// ── Task numbers: always 1..N in queue order ──────────────────────────────────
+function seqFontSize(seq) { return seq >= 100 ? '8px' : seq >= 10 ? '10px' : ''; }
+
+// Call after anything that removes or reorders tasks (remove, cancel, drag, restore)
+function renumberTasks() {
+  taskQueue.forEach((task, i) => {
+    task.seq = i + 1;
+    const el = document.querySelector(`#task-${task.id} .ts-n`);
+    if (el) {
+      el.textContent = String(task.seq);
+      el.style.fontSize = seqFontSize(task.seq);
+    }
+  });
+  nextSeq = taskQueue.length + 1;
+}
+
 // ── Task card rendering ────────────────────────────────────────────────────────
 function renderTaskCard(task) {
   queueEmpty.style.display = 'none';
@@ -949,6 +966,7 @@ function attachCardListeners(card, task) {
     }
     if (task.status !== 'generating') {
       taskQueue = taskQueue.filter((t) => t.id !== task.id);
+      renumberTasks();
       if (taskQueue.length === 0) { queueEmpty.style.display = ''; nextSeq = 1; nextTaskId = 1; expandedTaskIds.clear(); }
       updateBadge();
       saveState();
@@ -979,7 +997,7 @@ function buildCardHTML(task) {
     <div class="task-header">
       ${task.status !== 'generating' ? `<span class="task-drag-handle" title="Drag to reorder">${ICONS.grip}</span>` : '<span style="width:19px;flex-shrink:0"></span>'}
       <span class="task-state" title="${badgeLabel}">
-        <span class="ts-n"${task.seq >= 100 ? ' style="font-size:8px"' : task.seq >= 10 ? ' style="font-size:10px"' : ''}>${task.seq}</span>
+        <span class="ts-n"${seqFontSize(task.seq) ? ` style="font-size:${seqFontSize(task.seq)}"` : ''}>${task.seq}</span>
         <svg class="ts-ring" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="14"/></svg>
       </span>
       <span class="task-filename">${escapeHtml(task.audioFileData.name)}</span>
@@ -1103,16 +1121,7 @@ function initDragAndDrop() {
       .map((c) => parseInt(c.id.replace('task-', ''), 10));
     taskQueue.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
 
-    // Update seq numbers
-    taskQueue.forEach((t, i) => {
-      t.seq = i + 1;
-      const seqEl = document.querySelector(`#task-${t.id} .ts-n`);
-      if (seqEl) {
-        seqEl.textContent = `${t.seq}`;
-        seqEl.style.fontSize = t.seq >= 100 ? '8px' : t.seq >= 10 ? '10px' : '';
-      }
-    });
-    nextSeq = taskQueue.length + 1;
+    renumberTasks();
 
     targetCard.classList.remove('drag-over-top', 'drag-over-bottom');
     saveState();
@@ -1305,6 +1314,7 @@ async function init() {
     nextTaskId = stored.nextTaskId || 1;
     nextSeq    = stored.nextSeq    || 1;
     taskQueue  = stored.taskQueue;
+    renumberTasks();  // close any gaps saved by an earlier session
     queueEmpty.style.display = 'none';
     taskQueue.forEach((task) => renderTaskCard(task));
     updateBadge();
